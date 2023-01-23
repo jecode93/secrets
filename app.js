@@ -5,7 +5,8 @@ const bodyParser = require("body-parser");
 const ejs = require("ejs");
 const { appendFile } = require("fs");
 const mongoose = require("mongoose");
-const encrypt = require("mongoose-encryption");
+// const encrypt = require("mongoose-encryption");
+const md5 = require("md5");
 
 const app = express();
 
@@ -31,8 +32,8 @@ const userSchema = mongoose.Schema({
 });
 
 //To encrypt only our password field in the database. (It's the reason why we use the object : encryptedFields)
-const secret = process.env.SECRET;
-userSchema.plugin(encrypt, { secret: secret, encryptedFields: ["password"] });
+// const secret = process.env.SECRET;
+// userSchema.plugin(encrypt, { secret: secret, encryptedFields: ["password"] });
 
 //Use the Schema to create the collection model of the database with the singular name.
 const User = mongoose.model("User", userSchema);
@@ -60,7 +61,7 @@ app.get("/register", function (req, res) {
 //Create or register a user using email and password
 app.post("/register", function (req, res) {
     const email = req.body.username;
-    const password = req.body.password;
+    const password = md5(req.body.password);
 
     const newUser = User({
         email: email,
@@ -81,7 +82,7 @@ app.post("/register", function (req, res) {
 //Login using email and password
 app.post("/login", function (req, res) {
     const username = req.body.username;
-    const password = req.body.password;
+    const password = md5(req.body.password);
 
     User.findOne({ email: username }, function (err, foundUser) {
         if (err) {
