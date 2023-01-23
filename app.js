@@ -1,4 +1,5 @@
 //jshint esversion:6
+require('dotenv').config();
 const express = require("express");
 const bodyParser = require("body-parser");
 const ejs = require("ejs");
@@ -30,7 +31,7 @@ const userSchema = mongoose.Schema({
 });
 
 //To encrypt only our password field in the database. (It's the reason why we use the object : encryptedFields)
-const secret = "Thisisourlittlesecret.";
+const secret = process.env.SECRET;
 userSchema.plugin(encrypt, { secret: secret, encryptedFields: ["password"] });
 
 //Use the Schema to create the collection model of the database with the singular name.
