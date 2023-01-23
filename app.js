@@ -4,6 +4,7 @@ const bodyParser = require("body-parser");
 const ejs = require("ejs");
 const { appendFile } = require("fs");
 const mongoose = require("mongoose");
+const encrypt = require("mongoose-encryption");
 
 const app = express();
 
@@ -27,6 +28,10 @@ const userSchema = mongoose.Schema({
     email: String,
     password: String
 });
+
+//To encrypt only our password field in the database. (It's the reason why we use the object : encryptedFields)
+const secret = "Thisisourlittlesecret.";
+userSchema.plugin(encrypt, { secret: secret, encryptedFields: ["password"] });
 
 //Use the Schema to create the collection model of the database with the singular name.
 const User = mongoose.model("User", userSchema);
