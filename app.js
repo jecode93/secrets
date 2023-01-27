@@ -1,4 +1,4 @@
-//jshint esversion:6
+// //jshint esversion:6
 require('dotenv').config();
 const express = require("express");
 const bodyParser = require("body-parser");
@@ -48,7 +48,8 @@ mongoose.connect(url + dbname, { useNewUrlParser: true });
 const userSchema = mongoose.Schema({
     email: String,
     password: String,
-    googleId: String
+    googleId: String,
+    secret: String
 });
 
 userSchema.plugin(passportLocalMongoose);
@@ -64,19 +65,13 @@ const User = mongoose.model("User", userSchema);
 // CHANGE: USE "createStrategy" INSTEAD OF "authenticate"
 passport.use(User.createStrategy());
 
-passport.serializeUser(function (user, cb) {
-    process.nextTick(function () {
-        return cb(null, {
-            id: user.id,
-            username: user.username,
-            picture: user.picture
-        });
-    });
+passport.serializeUser(function (user, done) {
+    done(null, user.id);
 });
 
-passport.deserializeUser(function (user, cb) {
-    process.nextTick(function () {
-        return cb(null, user);
+passport.deserializeUser(function (id, done) {
+    User.findById(id, function (err, user) {
+        done(err, user);
     });
 });
 
@@ -119,12 +114,42 @@ app.get("/register", function (req, res) {
 
 
 app.get("/secrets", function (req, res) {
-    if (req.isAuthenticated()) {
-        res.render("secrets");
-    }
-    else {
+    User.find({ "secret": { $ne: null } }, function (err, foundUsers) {
+        if (err) {
+            console.log(err);
+        } else {
+            if (foundUsers) {
+                res.render("secrets", { usersWithSecrets: foundUsers });
+            }
+        }
+    });
+});
+
+app.get("/submit", function (req, res) {
+    if (req.isAuthenticated) {
+        res.render("submit");
+    } else {
         res.redirect("/login");
     }
+});
+
+app.post("/submit", function (req, res) {
+    const submittedSecret = req.body.secret;
+    // console.log(req.user._id);
+
+    User.findById(req.user.id, function (err, foundUser) {
+        if (err) {
+            console.log(err);
+        } else {
+            if (foundUser) {
+                foundUser.secret = submittedSecret;
+                foundUser.save(function () {
+                    res.redirect("/secrets");
+                });
+            }
+        }
+    });
+
 });
 
 app.get("/logout", function (req, res) {
@@ -215,7 +240,7 @@ app.post("/login", function (req, res) {
 
     const user = User({
         username: username,
-        password: passport
+        password: password
     });
 
     req.login(user, function (err) {
